@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: momly_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: momly1234
+      MYSQL_DATABASE: momly_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - momly_data:/var/lib/mysql
+    networks:
+      - momly_network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pmomly1234"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  backend:
+    build: .
+    container_name: momly_backend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_USER: root
+      DB_PASSWORD: momly1234
+      DB_NAME: momly_db
+      JWT_SECRET: momly_secret_key_2024
+      JWT_EXPIRES_IN: 7d
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - momly_network
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+volumes:
+  momly_data:
+
+networks:
+  momly_network:
+    driver: bridge
