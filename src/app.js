@@ -7,6 +7,10 @@ const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 
+app.get("/", (req, res) => {
+  res.status(200).send("MOMLY backend OK ✅");
+});
+
 // Middlewares
 app.use(cors());
 app.use(express.json());
