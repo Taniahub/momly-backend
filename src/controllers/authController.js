@@ -160,14 +160,17 @@ const getBienestar = async (req, res) => {
   const getGuias = async (req, res) => {
   try {
     const [categorias] = await pool.query('SELECT * FROM categorias_contenido');
-    const [contenidos] = await pool.query('SELECT * FROM contenidos WHERE tipo = "guia" AND es_premium = 0');
-    
+    const [contenidos] = await pool.query(
+      'SELECT * FROM contenidos WHERE tipo = ? AND es_premium = ?',
+      ['guia', 0]
+    );
+
     const resultado = categorias.map(cat => ({
       ...cat,
-      guias: contenidos.filter(c => c.id_categoria === cat.id_categoria)
+      guias: contenidos.filter(c => Number(c.id_categoria) === Number(cat.id_categoria))
     }));
 
-    return res.status(200).json({ ok: true, data: resultado });
+    return res.json({ ok: true, data: resultado });
   } catch (error) {
     console.error('Error en getGuias:', error);
     return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
