@@ -111,8 +111,10 @@ const login = async (req, res) => {
 const getGuias = async (req, res) => {
   try {
     const [categorias] = await pool.query('SELECT * FROM categorias_contenido');
-    const [contenidos] = await pool.query('SELECT * FROM contenidos WHERE tipo = "guia" AND es_premium = 0');
-    
+    const [contenidos] = await pool.query(
+      "SELECT * FROM contenidos WHERE tipo = ? AND es_premium = ?",
+      ["guia", 0]
+    );
     const resultado = categorias.map(cat => ({
       ...cat,
       guias: contenidos.filter(c => c.id_categoria === cat.id_categoria)
