@@ -84,7 +84,7 @@ const login = async (req, res) => {
     if (!correo || !password)
       return res.status(400).json({ ok: false, mensaje: 'Correo y contraseña son obligatorios' });
 
-    const [usuarios] = await pool.query('SELECT * FROM usuarios WHERE correo = ? AND estado = 1', [correo]);
+    const [usuarios] = await pool.query('SELECT * FROM usuarios WHERE correo = ?', [correo]);
     if (usuarios.length === 0)
       return res.status(401).json({ ok: false, mensaje: 'Credenciales incorrectas' });
 
@@ -159,26 +159,7 @@ const getBienestar = async (req, res) => {
     return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
   }
 
-  const getGuias = async (req, res) => {
-  try {
-    const [categorias] = await pool.query('SELECT * FROM categorias_contenido');
-    const [contenidos] = await pool.query(
-      'SELECT * FROM contenidos WHERE tipo = ? AND es_premium = ?',
-      ['guia', 0]
-    );
-
-    const resultado = categorias.map(cat => ({
-      ...cat,
-      guias: contenidos.filter(c => Number(c.id_categoria) === Number(cat.id_categoria))
-    }));
-
-    return res.json({ ok: true, data: resultado });
-  } catch (error) {
-    console.error('Error en getGuias:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
-  }
-};
 };
 
 
-module.exports = { registro, registroCompleto, login, getGuias };
+module.exports = { registro, registroCompleto, login, getGuias, registrarBienestar, getBienestar };
