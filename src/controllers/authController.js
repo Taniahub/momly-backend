@@ -173,13 +173,20 @@ const getBienestar = async (req, res) => {
 };
 
 const verificarCorreo = async (req, res) => {
-  const { correo } = req.body;
-  const [existe] = await pool.query(
-    'SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]
-  );
-  if (existe.length > 0)
-    return res.status(409).json({ ok: false, mensaje: 'Este correo ya está registrado' });
-  return res.status(200).json({ ok: true });
+  try {
+    const { correo } = req.body;
+    console.log('Verificando correo:', correo); // ← agrega esto
+    const [existe] = await pool.query(
+      'SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]
+    );
+    console.log('Resultado:', existe); // ← y esto
+    if (existe.length > 0)
+      return res.status(409).json({ ok: false, mensaje: 'Este correo ya está registrado' });
+    return res.status(200).json({ ok: true });
+  } catch (error) {
+    console.error('Error en verificarCorreo:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' }); // ← este es el que probablemente está llegando
+  }
 };
 
 
