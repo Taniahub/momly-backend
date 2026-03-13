@@ -40,7 +40,18 @@ const registroCompleto = async (req, res) => {
     if (!nombre || !correo || !password)
       return res.status(400).json({ ok: false, mensaje: 'Todos los campos del usuario son obligatorios' });
     if (!bebe || !bebe.nombre || !bebe.fecha_nacimiento || !bebe.genero)
-      return res.status(400).json({ ok: false, mensaje: 'Todos los campos del bebé son obligatorios' });
+  return res.status(400).json({ ok: false, mensaje: 'Todos los campos del bebé son obligatorios' });
+
+    // ✅ AGREGA ESTO AQUÍ
+    const fechaNac = new Date(bebe.fecha_nacimiento);
+    const hoy = new Date();
+    const hace3anios = new Date();
+    hace3anios.setFullYear(hoy.getFullYear() - 3);
+
+    if (fechaNac > hoy)
+      return res.status(400).json({ ok: false, mensaje: 'La fecha de nacimiento no puede ser futura' });
+    if (fechaNac < hace3anios)
+      return res.status(400).json({ ok: false, mensaje: 'MOMLY es para bebés de 0 a 3 años 💕' });
 
     const [usuarioExistente] = await connection.query('SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]);
     if (usuarioExistente.length > 0)
@@ -161,5 +172,15 @@ const getBienestar = async (req, res) => {
 
 };
 
+const verificarCorreo = async (req, res) => {
+  const { correo } = req.body;
+  const [existe] = await pool.query(
+    'SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]
+  );
+  if (existe.length > 0)
+    return res.status(409).json({ ok: false, mensaje: 'Este correo ya está registrado' });
+  return res.status(200).json({ ok: true });
+};
 
-module.exports = { registro, registroCompleto, login, getGuias, registrarBienestar, getBienestar };
+
+module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar };
