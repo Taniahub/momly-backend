@@ -175,11 +175,11 @@ const getBienestar = async (req, res) => {
 const verificarCorreo = async (req, res) => {
   try {
     const { correo } = req.body;
-    console.log('Verificando correo:', correo); // ← agrega esto
+    console.log('Verificando correo:', correo); 
     const [existe] = await pool.query(
       'SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]
     );
-    console.log('Resultado:', existe); // ← y esto
+    console.log('Resultado:', existe); 
     if (existe.length > 0)
       return res.status(409).json({ ok: false, mensaje: 'Este correo ya está registrado' });
     return res.status(200).json({ ok: true });
@@ -189,5 +189,50 @@ const verificarCorreo = async (req, res) => {
   }
 };
 
+// ─── CITAS ──────────────────────────────────────────────────
+const crearCita = async (req, res) => {
+  try {
+    const { id_usuario, titulo, descripcion, fecha_hora, recordatorio } = req.body;
+    if (!id_usuario || !titulo || !fecha_hora)
+      return res.status(400).json({ ok: false, mensaje: 'Título y fecha son obligatorios' });
 
-module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar };
+    const [resultado] = await pool.query(
+      'INSERT INTO citas (id_usuario, titulo, descripcion, fecha_hora, recordatorio) VALUES (?, ?, ?, ?, ?)',
+      [id_usuario, titulo, descripcion || '', fecha_hora, recordatorio || 0]
+    );
+    return res.status(201).json({ ok: true, mensaje: 'Cita creada exitosamente', id: resultado.insertId });
+  } catch (error) {
+    console.error('Error en crearCita:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const getCitas = async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const [citas] = await pool.query(
+      'SELECT * FROM citas WHERE id_usuario = ? ORDER BY fecha_hora ASC',
+      [id_usuario]
+    );
+    return res.status(200).json({ ok: true, data: citas });
+  } catch (error) {
+    console.error('Error en getCitas:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const eliminarCita = async (req, res) => {
+  try {
+    const { id_cita } = req.params;
+    await pool.query('DELETE FROM citas WHERE id_cita = ?', [id_cita]);
+    return res.status(200).json({ ok: true, mensaje: 'Cita eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error en eliminarCita:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+
+
+
+module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita };
