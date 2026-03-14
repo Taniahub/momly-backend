@@ -232,7 +232,68 @@ const eliminarCita = async (req, res) => {
   }
 };
 
+// ─── VACUNAS ─────────────────────────────────────────────────
+const getVacunas = async (req, res) => {
+  try {
+    const { id_bebe } = req.params;
+    const [vacunas] = await pool.query('SELECT * FROM vacunas ORDER BY edad_aplicacion_meses ASC');
+    const [aplicadas] = await pool.query('SELECT * FROM vacunas_bebe WHERE id_bebe = ?', [id_bebe]);
+
+    const resultado = vacunas.map(v => ({
+      ...v,
+      aplicada: aplicadas.some(a => a.id_vacuna === v.id_vacuna),
+      fecha_aplicacion: aplicadas.find(a => a.id_vacuna === v.id_vacuna)?.fecha_aplicacion || null,
+      observaciones: aplicadas.find(a => a.id_vacuna === v.id_vacuna)?.observaciones || null,
+      id_vacuna_bebe: aplicadas.find(a => a.id_vacuna === v.id_vacuna)?.id_vacuna_bebe || null,
+    }));
+
+    return res.status(200).json({ ok: true, data: resultado });
+  } catch (error) {
+    console.error('Error en getVacunas:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const marcarVacuna = async (req, res) => {
+  try {
+    const { id_bebe, id_vacuna, fecha_aplicacion, observaciones } = req.body;
+    if (!id_bebe || !id_vacuna) return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
+
+    await pool.query(
+      'INSERT INTO vacunas_bebe (id_bebe, id_vacuna, fecha_aplicacion, observaciones) VALUES (?, ?, ?, ?)',
+      [id_bebe, id_vacuna, fecha_aplicacion || null, observaciones || null]
+    );
+    return res.status(201).json({ ok: true, mensaje: 'Vacuna registrada exitosamente' });
+  } catch (error) {
+    console.error('Error en marcarVacuna:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const desmarcarVacuna = async (req, res) => {
+  try {
+    const { id_vacuna_bebe } = req.params;
+    await pool.query('DELETE FROM vacunas_bebe WHERE id_vacuna_bebe = ?', [id_vacuna_bebe]);
+    return res.status(200).json({ ok: true, mensaje: 'Vacuna desmarcada exitosamente' });
+  } catch (error) {
+    console.error('Error en desmarcarVacuna:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const getBebe = async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const [bebes] = await pool.query('SELECT * FROM bebes WHERE id_usuario = ? LIMIT 1', [id_usuario]);
+    if (bebes.length === 0) return res.status(404).json({ ok: false, mensaje: 'No se encontró bebé' });
+    return res.status(200).json({ ok: true, data: bebes[0] });
+  } catch (error) {
+    console.error('Error en getBebe:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
 
 
 
-module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita };
+
+module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, desmarcarVacuna, getBebe };

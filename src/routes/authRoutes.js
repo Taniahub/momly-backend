@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { registro, registroCompleto, login, getGuias, registrarBienestar, getBienestar, verificarCorreo, crearCita, getCitas, eliminarCita } = require('../controllers/authController');
+const { registro, registroCompleto, login, getGuias, registrarBienestar, getBienestar, verificarCorreo, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, desmarcarVacuna, getBebe } = require('../controllers/authController');
 
 router.post('/registro', registro);
 router.post('/login', login);
@@ -12,5 +12,9 @@ router.post('/verificar-correo', verificarCorreo);
 router.post('/citas', crearCita);
 router.get('/citas/:id_usuario', getCitas);
 router.delete('/citas/:id_cita', eliminarCita);
+router.get('/vacunas/:id_bebe', getVacunas);
+router.post('/vacunas', marcarVacuna);
+router.delete('/vacunas/:id_vacuna_bebe', desmarcarVacuna);
+router.get('/bebe/:id_usuario', getBebe);
 
 module.exports = router;
