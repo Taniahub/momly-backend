@@ -300,14 +300,13 @@ const getBiblioteca = async (req, res) => {
       'SELECT * FROM categorias_contenido WHERE id_categoria IN (3,4,5,6)'
     );
     const [contenidos] = await pool.query(
-      'SELECT * FROM contenidos WHERE tipo = "articulo" AND es_premium = 0'
+      'SELECT * FROM contenidos WHERE tipo = ? AND es_premium = ?',
+      ['articulo', 0]
     );
-
     const resultado = categorias.map(cat => ({
       ...cat,
       articulos: contenidos.filter(c => c.id_categoria === cat.id_categoria)
     }));
-
     return res.status(200).json({ ok: true, data: resultado });
   } catch (error) {
     console.error('Error en getBiblioteca:', error);
