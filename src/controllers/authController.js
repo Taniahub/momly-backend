@@ -293,7 +293,31 @@ const getBebe = async (req, res) => {
   }
 };
 
+// ─── BIBLIOTECA ─────────────────────────────────────────────
+const getBiblioteca = async (req, res) => {
+  try {
+    const [categorias] = await pool.query(
+      'SELECT * FROM categorias_contenido WHERE id_categoria IN (3,4,5,6)'
+    );
+    const [contenidos] = await pool.query(
+      'SELECT * FROM contenidos WHERE tipo = "articulo" AND es_premium = 0'
+    );
+
+    const resultado = categorias.map(cat => ({
+      ...cat,
+      articulos: contenidos.filter(c => c.id_categoria === cat.id_categoria)
+    }));
+
+    return res.status(200).json({ ok: true, data: resultado });
+  } catch (error) {
+    console.error('Error en getBiblioteca:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
 
 
 
-module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, desmarcarVacuna, getBebe };
+
+
+
+module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca };
