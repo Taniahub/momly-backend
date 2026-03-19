@@ -358,8 +358,58 @@ const getSugerencias = async (req, res) => {
   }
 };
 
+// ─── SUSCRIPCION PREMIUM ─────────────────────────────────────
+const activarPremium = async (req, res) => {
+  const connection = await pool.getConnection();
+  try {
+    const { id_usuario, meses } = req.body;
+    if (!id_usuario || !meses) return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
+
+    const fecha_inicio = new Date();
+    const fecha_fin = new Date();
+    fecha_fin.setMonth(fecha_fin.getMonth() + meses);
+
+    await connection.beginTransaction();
+
+    await connection.query(
+      'INSERT INTO suscripciones (id_usuario, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, "activa")',
+      [id_usuario, fecha_inicio.toISOString().slice(0, 10), fecha_fin.toISOString().slice(0, 10)]
+    );
+
+    await connection.query(
+      'UPDATE usuarios SET tipo_usuario = "premium" WHERE id_usuario = ?',
+      [id_usuario]
+    );
+
+    await connection.commit();
+    return res.status(201).json({ ok: true, mensaje: 'Suscripcion premium activada exitosamente', fecha_fin: fecha_fin.toISOString().slice(0, 10) });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error en activarPremium:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  } finally {
+    connection.release();
+  }
+};
+
+const getSuscripcion = async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const [suscripciones] = await pool.query(
+      'SELECT * FROM suscripciones WHERE id_usuario = ? AND estado = "activa" ORDER BY fecha_fin DESC LIMIT 1',
+      [id_usuario]
+    );
+    const [usuario] = await pool.query('SELECT tipo_usuario FROM usuarios WHERE id_usuario = ?', [id_usuario]);
+    return res.status(200).json({ ok: true, data: { suscripcion: suscripciones[0] || null, tipo_usuario: usuario[0]?.tipo_usuario } });
+  } catch (error) {
+    console.error('Error en getSuscripcion:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+
 
 module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
   marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento,
-  getSugerencias};
+  getSugerencias, activarPremium, getSuscripcion};

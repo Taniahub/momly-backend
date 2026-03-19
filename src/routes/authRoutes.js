@@ -3,7 +3,7 @@ const router = express.Router();
 const { registro, registroCompleto, login, getGuias, registrarBienestar, getBienestar, 
     verificarCorreo, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, 
     desmarcarVacuna, getBebe, getBiblioteca,getEsNormal, getAcompanamiento, 
-    getSugerencias} = require('../controllers/authController');
+    getSugerencias, activarPremium, getSuscripcion} = require('../controllers/authController');
 
 router.post('/registro', registro);
 router.post('/login', login);
@@ -23,5 +23,7 @@ router.get('/biblioteca', getBiblioteca);
 router.get('/es-normal', getEsNormal);
 router.get('/acompanamiento/:estado', getAcompanamiento);
 router.get('/sugerencias/:meses', getSugerencias);
+router.post('/suscripcion', activarPremium);
+router.get('/suscripcion/:id_usuario', getSuscripcion);
 
 module.exports = router;
