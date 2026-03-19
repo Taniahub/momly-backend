@@ -4,7 +4,8 @@ const { registro, registroCompleto, login, getGuias, registrarBienestar, getBien
     verificarCorreo, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, 
     desmarcarVacuna, getBebe, getBiblioteca,getEsNormal, getAcompanamiento, 
     getSugerencias, activarPremium, getSuscripcion, getPublicaciones, crearPublicacion, 
-    getComentarios, crearComentario, eliminarPublicacion} = require('../controllers/authController');
+    getComentarios, crearComentario, eliminarPublicacion, getEspecialistas, 
+    agendarConsulta, getMisConsultas} = require('../controllers/authController');
 
 router.post('/registro', registro);
 router.post('/login', login);
@@ -31,5 +32,8 @@ router.post('/publicaciones', crearPublicacion);
 router.delete('/publicaciones/:id_publicacion', eliminarPublicacion);
 router.get('/comentarios/:id_publicacion', getComentarios);
 router.post('/comentarios', crearComentario);
+router.get('/especialistas', getEspecialistas);
+router.post('/consultas', agendarConsulta);
+router.get('/consultas/:id_usuario', getMisConsultas);
 
 module.exports = router;

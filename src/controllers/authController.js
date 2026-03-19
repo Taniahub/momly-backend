@@ -407,38 +407,6 @@ const getSuscripcion = async (req, res) => {
   }
 };
 
-// ─── ESPECIALISTAS ───────────────────────────────────────────
-const getEspecialistas = async (req, res) => {
-  try {
-    const [especialistas] = await pool.query('SELECT * FROM especialistas');
-    return res.status(200).json({ ok: true, data: especialistas });
-  } catch (error) {
-    console.error('Error en getEspecialistas:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
-  }
-};
-
-const agendarConsulta = async (req, res) => {
-  try {
-    const { id_usuario, id_especialista, fecha } = req.body;
-    if (!id_usuario || !id_especialista || !fecha)
-      return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
-
-    const [usuario] = await pool.query('SELECT tipo_usuario FROM usuarios WHERE id_usuario = ?', [id_usuario]);
-    if (usuario[0]?.tipo_usuario !== 'premium')
-      return res.status(403).json({ ok: false, mensaje: 'Se requiere plan Premium para agendar consultas' });
-
-    await pool.query(
-      'INSERT INTO consultas_especialista (id_usuario, id_especialista, fecha, estado) VALUES (?, ?, ?, "pendiente")',
-      [id_usuario, id_especialista, fecha]
-    );
-    return res.status(201).json({ ok: true, mensaje: 'Consulta agendada exitosamente' });
-  } catch (error) {
-    console.error('Error en agendarConsulta:', error);
-    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
-  }
-};
-
 // ─── COMUNIDAD ───────────────────────────────────────────────
 const getPublicaciones = async (req, res) => {
   try {
@@ -522,6 +490,39 @@ const eliminarPublicacion = async (req, res) => {
   }
 };
 
+
+// ─── ESPECIALISTAS ───────────────────────────────────────────
+const getEspecialistas = async (req, res) => {
+  try {
+    const [especialistas] = await pool.query('SELECT * FROM especialistas');
+    return res.status(200).json({ ok: true, data: especialistas });
+  } catch (error) {
+    console.error('Error en getEspecialistas:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const agendarConsulta = async (req, res) => {
+  try {
+    const { id_usuario, id_especialista, fecha } = req.body;
+    if (!id_usuario || !id_especialista || !fecha)
+      return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
+
+    const [usuario] = await pool.query('SELECT tipo_usuario FROM usuarios WHERE id_usuario = ?', [id_usuario]);
+    if (usuario[0]?.tipo_usuario !== 'premium')
+      return res.status(403).json({ ok: false, mensaje: 'Se requiere plan Premium para agendar consultas' });
+
+    await pool.query(
+      'INSERT INTO consultas_especialista (id_usuario, id_especialista, fecha, estado) VALUES (?, ?, ?, "pendiente")',
+      [id_usuario, id_especialista, fecha]
+    );
+    return res.status(201).json({ ok: true, mensaje: 'Consulta agendada exitosamente' });
+  } catch (error) {
+    console.error('Error en agendarConsulta:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
 const getMisConsultas = async (req, res) => {
   try {
     const { id_usuario } = req.params;
@@ -545,4 +546,5 @@ module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias,
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
   marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento,
   getSugerencias, activarPremium, getSuscripcion, getPublicaciones, crearPublicacion, 
-  getComentarios, crearComentario, eliminarPublicacion};
+  getComentarios, crearComentario, eliminarPublicacion, getEspecialistas, 
+  agendarConsulta, getMisConsultas};
