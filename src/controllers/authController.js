@@ -407,9 +407,142 @@ const getSuscripcion = async (req, res) => {
   }
 };
 
+// ─── ESPECIALISTAS ───────────────────────────────────────────
+const getEspecialistas = async (req, res) => {
+  try {
+    const [especialistas] = await pool.query('SELECT * FROM especialistas');
+    return res.status(200).json({ ok: true, data: especialistas });
+  } catch (error) {
+    console.error('Error en getEspecialistas:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const agendarConsulta = async (req, res) => {
+  try {
+    const { id_usuario, id_especialista, fecha } = req.body;
+    if (!id_usuario || !id_especialista || !fecha)
+      return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
+
+    const [usuario] = await pool.query('SELECT tipo_usuario FROM usuarios WHERE id_usuario = ?', [id_usuario]);
+    if (usuario[0]?.tipo_usuario !== 'premium')
+      return res.status(403).json({ ok: false, mensaje: 'Se requiere plan Premium para agendar consultas' });
+
+    await pool.query(
+      'INSERT INTO consultas_especialista (id_usuario, id_especialista, fecha, estado) VALUES (?, ?, ?, "pendiente")',
+      [id_usuario, id_especialista, fecha]
+    );
+    return res.status(201).json({ ok: true, mensaje: 'Consulta agendada exitosamente' });
+  } catch (error) {
+    console.error('Error en agendarConsulta:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+// ─── COMUNIDAD ───────────────────────────────────────────────
+const getPublicaciones = async (req, res) => {
+  try {
+    const [publicaciones] = await pool.query(`
+      SELECT p.id_publicacion, p.contenido, p.anonimo, p.fecha_publicacion, p.estado,
+        CASE WHEN p.anonimo = 1 THEN 'Mama Anonima' ELSE u.nombre END as nombre_usuario,
+        COUNT(c.id_comentario) as total_comentarios
+      FROM publicaciones p
+      LEFT JOIN usuarios u ON p.id_usuario = u.id_usuario
+      LEFT JOIN comentarios c ON p.id_publicacion = c.id_publicacion
+      WHERE p.estado = 'activo'
+      GROUP BY p.id_publicacion
+      ORDER BY p.fecha_publicacion DESC
+    `);
+    return res.status(200).json({ ok: true, data: publicaciones });
+  } catch (error) {
+    console.error('Error en getPublicaciones:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const crearPublicacion = async (req, res) => {
+  try {
+    const { id_usuario, contenido, anonimo } = req.body;
+    if (!id_usuario || !contenido)
+      return res.status(400).json({ ok: false, mensaje: 'Contenido obligatorio' });
+
+    const [resultado] = await pool.query(
+      'INSERT INTO publicaciones (id_usuario, contenido, anonimo, estado) VALUES (?, ?, ?, "activo")',
+      [id_usuario, contenido, anonimo || 0]
+    );
+    return res.status(201).json({ ok: true, mensaje: 'Publicacion creada exitosamente', id: resultado.insertId });
+  } catch (error) {
+    console.error('Error en crearPublicacion:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const getComentarios = async (req, res) => {
+  try {
+    const { id_publicacion } = req.params;
+    const [comentarios] = await pool.query(`
+      SELECT c.id_comentario, c.comentario, c.fecha, u.nombre
+      FROM comentarios c
+      LEFT JOIN usuarios u ON c.id_usuario = u.id_usuario
+      WHERE c.id_publicacion = ?
+      ORDER BY c.fecha ASC
+    `, [id_publicacion]);
+    return res.status(200).json({ ok: true, data: comentarios });
+  } catch (error) {
+    console.error('Error en getComentarios:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const crearComentario = async (req, res) => {
+  try {
+    const { id_publicacion, id_usuario, comentario } = req.body;
+    if (!id_publicacion || !id_usuario || !comentario)
+      return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
+
+    await pool.query(
+      'INSERT INTO comentarios (id_publicacion, id_usuario, comentario) VALUES (?, ?, ?)',
+      [id_publicacion, id_usuario, comentario]
+    );
+    return res.status(201).json({ ok: true, mensaje: 'Comentario agregado exitosamente' });
+  } catch (error) {
+    console.error('Error en crearComentario:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const eliminarPublicacion = async (req, res) => {
+  try {
+    const { id_publicacion } = req.params;
+    await pool.query('UPDATE publicaciones SET estado = "moderado" WHERE id_publicacion = ?', [id_publicacion]);
+    return res.status(200).json({ ok: true, mensaje: 'Publicacion eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error en eliminarPublicacion:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const getMisConsultas = async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const [consultas] = await pool.query(`
+      SELECT c.id_consulta, c.fecha, c.estado, e.nombre, e.especialidad
+      FROM consultas_especialista c
+      LEFT JOIN especialistas e ON c.id_especialista = e.id_especialista
+      WHERE c.id_usuario = ?
+      ORDER BY c.fecha DESC
+    `, [id_usuario]);
+    return res.status(200).json({ ok: true, data: consultas });
+  } catch (error) {
+    console.error('Error en getMisConsultas:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
 
 
 module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
   marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento,
-  getSugerencias, activarPremium, getSuscripcion};
+  getSugerencias, activarPremium, getSuscripcion, getPublicaciones, crearPublicacion, 
+  getComentarios, crearComentario, eliminarPublicacion};
