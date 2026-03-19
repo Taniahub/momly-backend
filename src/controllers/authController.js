@@ -121,16 +121,17 @@ const login = async (req, res) => {
 
 const getGuias = async (req, res) => {
   try {
-    const [categorias] = await pool.query('SELECT * FROM categorias_contenido');
+    const [categorias] = await pool.query(
+      'SELECT * FROM categorias_contenido WHERE id_categoria IN (1, 2)'
+    );
     const [contenidos] = await pool.query(
-      "SELECT * FROM contenidos WHERE tipo = ? AND es_premium = ?",
-      ["guia", 0]
+      'SELECT * FROM contenidos WHERE tipo = ? AND es_premium = ?',
+      ['guia', 0]
     );
     const resultado = categorias.map(cat => ({
       ...cat,
       guias: contenidos.filter(c => c.id_categoria === cat.id_categoria)
     }));
-
     return res.status(200).json({ ok: true, data: resultado });
   } catch (error) {
     console.error('Error en getGuias:', error);
@@ -325,9 +326,24 @@ const getEsNormal = async (req, res) => {
   }
 };
 
-
+// ─── ACOMPAÑAMIENTO EMOCIONAL ────────────────────────────────
+const getAcompanamiento = async (req, res) => {
+  try {
+    const { estado } = req.params;
+    const [resultado] = await pool.query(
+      'SELECT * FROM acompanamiento_emocional WHERE estado_emocional = ? LIMIT 1',
+      [estado]
+    );
+    if (resultado.length === 0)
+      return res.status(404).json({ ok: false, mensaje: 'No se encontró acompañamiento para este estado' });
+    return res.status(200).json({ ok: true, data: resultado[0] });
+  } catch (error) {
+    console.error('Error en getAcompanamiento:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
 
 
 module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
-  marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal};
+  marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento};
