@@ -435,8 +435,8 @@ const crearPublicacion = async (req, res) => {
       return res.status(400).json({ ok: false, mensaje: 'Contenido obligatorio' });
 
     const [resultado] = await pool.query(
-      'INSERT INTO publicaciones (id_usuario, contenido, anonimo, estado) VALUES (?, ?, ?, "activo")',
-      [id_usuario, contenido, anonimo || 0]
+      'INSERT INTO publicaciones (id_usuario, contenido, anonimo, estado) VALUES (?, ?, ?, ?)',
+      [id_usuario, contenido, anonimo || 0, 'activo']
     );
     return res.status(201).json({ ok: true, mensaje: 'Publicacion creada exitosamente', id: resultado.insertId });
   } catch (error) {
