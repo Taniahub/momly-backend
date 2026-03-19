@@ -343,7 +343,23 @@ const getAcompanamiento = async (req, res) => {
   }
 };
 
+// ─── SUGERENCIAS DESARROLLO ──────────────────────────────────
+const getSugerencias = async (req, res) => {
+  try {
+    const { meses } = req.params;
+    const [sugerencias] = await pool.query(
+      'SELECT * FROM sugerencias_desarrollo WHERE mes_inicio <= ? AND mes_fin >= ?',
+      [meses, meses]
+    );
+    return res.status(200).json({ ok: true, data: sugerencias });
+  } catch (error) {
+    console.error('Error en getSugerencias:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
 
 module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
-  marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento};
+  marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento,
+  getSugerencias};
