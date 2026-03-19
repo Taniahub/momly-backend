@@ -314,9 +314,20 @@ const getBiblioteca = async (req, res) => {
   }
 };
 
+// ─── ES NORMAL ───────────────────────────────────────────────
+const getEsNormal = async (req, res) => {
+  try {
+    const [preguntas] = await pool.query('SELECT * FROM es_normal ORDER BY categoria, id_pregunta');
+    return res.status(200).json({ ok: true, data: preguntas });
+  } catch (error) {
+    console.error('Error en getEsNormal:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
 
 
 
 
-
-module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca };
+module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
+  registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
+  marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal};
