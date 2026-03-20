@@ -544,7 +544,7 @@ const getMisConsultas = async (req, res) => {
 
 // ─── RECUPERACIÓN DE CONTRASEÑA ──────────────────────────────────────────────
 
-const nodemailer = require('nodemailer');
+
 
 const transporter = nodemailer.createTransport({
   service: 'gmail',
