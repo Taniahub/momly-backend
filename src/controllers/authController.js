@@ -398,8 +398,8 @@ const getSuscripcion = async (req, res) => {
   try {
     const { id_usuario } = req.params;
     const [suscripciones] = await pool.query(
-      'SELECT * FROM suscripciones WHERE id_usuario = ? AND estado = "activa" ORDER BY fecha_fin DESC LIMIT 1',
-      [id_usuario]
+      'SELECT * FROM suscripciones WHERE id_usuario = ? AND estado = ? ORDER BY fecha_fin DESC LIMIT 1',
+      [id_usuario, 'activa']
     );
     const [usuario] = await pool.query('SELECT tipo_usuario FROM usuarios WHERE id_usuario = ?', [id_usuario]);
     return res.status(200).json({ ok: true, data: { suscripcion: suscripciones[0] || null, tipo_usuario: usuario[0]?.tipo_usuario } });
