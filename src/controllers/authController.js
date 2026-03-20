@@ -1,6 +1,8 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { pool } = require('../config/db');
+const nodemailer = require('nodemailer');
+
 
 // ─── REGISTRO SIMPLE ────────────────────────────────────────
 const registro = async (req, res) => {
@@ -540,11 +542,150 @@ const getMisConsultas = async (req, res) => {
   }
 };
 
+// ─── RECUPERACIÓN DE CONTRASEÑA ──────────────────────────────────────────────
 
+const nodemailer = require('nodemailer');
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  },
+});
+
+const solicitarRecuperacion = async (req, res) => {
+  try {
+    const { correo } = req.body;
+    if (!correo)
+      return res.status(400).json({ ok: false, mensaje: 'El correo es obligatorio' });
+
+    const [usuarios] = await pool.query(
+      'SELECT id_usuario, nombre FROM usuarios WHERE correo = ?', [correo]
+    );
+    if (usuarios.length === 0)
+      return res.status(200).json({ ok: true, mensaje: 'Si el correo existe, recibirás un código' });
+
+    const usuario = usuarios[0];
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const expira_en = new Date(Date.now() + 15 * 60 * 1000);
+
+    await pool.query(
+      'UPDATE recuperacion_password SET usado = 1 WHERE id_usuario = ? AND usado = 0',
+      [usuario.id_usuario]
+    );
+    await pool.query(
+      'INSERT INTO recuperacion_password (id_usuario, codigo, expira_en) VALUES (?, ?, ?)',
+      [usuario.id_usuario, codigo, expira_en]
+    );
+
+    await transporter.sendMail({
+      from: `"MOMLY 🌸" <${process.env.EMAIL_USER}>`,
+      to: correo,
+      subject: 'Tu código para recuperar tu contraseña',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto; padding: 32px; background: #FFF1E6; border-radius: 16px;">
+          <h1 style="color: #E8A4B8; text-align: center; letter-spacing: 4px;">🌸 MOMLY</h1>
+          <p style="color: #5e5d5d; font-size: 16px;">Hola <strong>${usuario.nombre}</strong> 💕</p>
+          <p style="color: #5e5d5d;">Recibimos una solicitud para recuperar tu contraseña. Usa este código:</p>
+          <div style="background: white; border-radius: 12px; padding: 24px; text-align: center; margin: 24px 0;">
+            <span style="font-size: 42px; font-weight: bold; letter-spacing: 10px; color: #E8A4B8;">${codigo}</span>
+          </div>
+          <p style="color: #999; font-size: 13px; text-align: center;">⏱️ Este código expira en <strong>15 minutos</strong></p>
+          <p style="color: #999; font-size: 12px; text-align: center;">Si no solicitaste esto, ignora este correo.</p>
+          <p style="color: #5e5d5d; font-size: 13px; text-align: center; margin-top: 24px;">Con amor, el equipo de MOMLY 🌸</p>
+        </div>
+      `,
+    });
+
+    return res.status(200).json({ ok: true, mensaje: 'Si el correo existe, recibirás un código' });
+  } catch (error) {
+    console.error('Error en solicitarRecuperacion:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const verificarCodigo = async (req, res) => {
+  try {
+    const { correo, codigo } = req.body;
+    if (!correo || !codigo)
+      return res.status(400).json({ ok: false, mensaje: 'Correo y código son obligatorios' });
+
+    const [usuarios] = await pool.query(
+      'SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]
+    );
+    if (usuarios.length === 0)
+      return res.status(404).json({ ok: false, mensaje: 'Correo no encontrado' });
+
+    const id_usuario = usuarios[0].id_usuario;
+
+    const [codigos] = await pool.query(
+      `SELECT id FROM recuperacion_password 
+       WHERE id_usuario = ? AND codigo = ? AND usado = 0 AND expira_en > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [id_usuario, codigo]
+    );
+
+    if (codigos.length === 0)
+      return res.status(400).json({ ok: false, mensaje: 'Código incorrecto o expirado' });
+
+    return res.status(200).json({ ok: true, mensaje: 'Código verificado correctamente' });
+  } catch (error) {
+    console.error('Error en verificarCodigo:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const restablecerPassword = async (req, res) => {
+  try {
+    const { correo, codigo, nuevaPassword } = req.body;
+    if (!correo || !codigo || !nuevaPassword)
+      return res.status(400).json({ ok: false, mensaje: 'Todos los campos son obligatorios' });
+
+    if (nuevaPassword.length < 6)
+      return res.status(400).json({ ok: false, mensaje: 'La contraseña debe tener mínimo 6 caracteres' });
+
+    const [usuarios] = await pool.query(
+      'SELECT id_usuario FROM usuarios WHERE correo = ?', [correo]
+    );
+    if (usuarios.length === 0)
+      return res.status(404).json({ ok: false, mensaje: 'Correo no encontrado' });
+
+    const id_usuario = usuarios[0].id_usuario;
+
+    const [codigos] = await pool.query(
+      `SELECT id FROM recuperacion_password 
+       WHERE id_usuario = ? AND codigo = ? AND usado = 0 AND expira_en > NOW()
+       ORDER BY created_at DESC LIMIT 1`,
+      [id_usuario, codigo]
+    );
+
+    if (codigos.length === 0)
+      return res.status(400).json({ ok: false, mensaje: 'Código incorrecto o expirado' });
+
+    const salt = await bcrypt.genSalt(10);
+    const passwordHash = await bcrypt.hash(nuevaPassword, salt);
+
+    await pool.query(
+      'UPDATE usuarios SET password = ? WHERE id_usuario = ?',
+      [passwordHash, id_usuario]
+    );
+    await pool.query(
+      'UPDATE recuperacion_password SET usado = 1 WHERE id = ?',
+      [codigos[0].id]
+    );
+
+    return res.status(200).json({ ok: true, mensaje: 'Contraseña actualizada exitosamente' });
+  } catch (error) {
+    console.error('Error en restablecerPassword:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
 
 module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
   marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento,
   getSugerencias, activarPremium, getSuscripcion, getPublicaciones, crearPublicacion, 
   getComentarios, crearComentario, eliminarPublicacion, getEspecialistas, 
-  agendarConsulta, getMisConsultas};
+  agendarConsulta, getMisConsultas, solicitarRecuperacion, verificarCodigo, 
+  restablecerPassword};
