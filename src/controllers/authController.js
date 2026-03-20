@@ -374,7 +374,7 @@ const activarPremium = async (req, res) => {
     await connection.beginTransaction();
 
     await connection.query('INSERT INTO suscripciones (id_usuario, fecha_inicio, fecha_fin, estado) VALUES (?, ?, ?, ?)',
-    [id_usuario, fecha_inicio.toISOString().slice(0, 10), fecha_fin.toISOString().slice(0, 10), 'activa']
+[id_usuario, fecha_inicio.toISOString().slice(0, 10), fecha_fin.toISOString().slice(0, 10), 'activa']
     );
 
     await connection.query(
