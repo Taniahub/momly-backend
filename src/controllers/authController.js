@@ -483,7 +483,8 @@ const crearComentario = async (req, res) => {
 const eliminarPublicacion = async (req, res) => {
   try {
     const { id_publicacion } = req.params;
-    await pool.query('UPDATE publicaciones SET estado = "moderado" WHERE id_publicacion = ?', [id_publicacion]);
+    await pool.query('UPDATE publicaciones SET estado = ? WHERE id_publicacion = ?',
+['moderado', id_publicacion]);
     return res.status(200).json({ ok: true, mensaje: 'Publicacion eliminada exitosamente' });
   } catch (error) {
     console.error('Error en eliminarPublicacion:', error);
@@ -514,8 +515,8 @@ const agendarConsulta = async (req, res) => {
       return res.status(403).json({ ok: false, mensaje: 'Se requiere plan Premium para agendar consultas' });
 
     await pool.query(
-      'INSERT INTO consultas_especialista (id_usuario, id_especialista, fecha, estado) VALUES (?, ?, ?, "pendiente")',
-      [id_usuario, id_especialista, fecha]
+      'INSERT INTO consultas_especialista (id_usuario, id_especialista, fecha, estado) VALUES (?, ?, ?, ?)',
+[id_usuario, id_especialista, fecha, 'pendiente']
     );
     return res.status(201).json({ ok: true, mensaje: 'Consulta agendada exitosamente' });
   } catch (error) {
