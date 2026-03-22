@@ -379,7 +379,7 @@ const activarPremium = async (req, res) => {
 
     await connection.query(
       'UPDATE usuarios SET tipo_usuario = ? WHERE id_usuario = ?',
-      [id_usuario, 'premium']
+      ['premium', id_usuario]
     );
 
     await connection.commit();
