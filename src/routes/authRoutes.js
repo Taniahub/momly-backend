@@ -6,7 +6,7 @@ const { registro, registroCompleto, login, getGuias, registrarBienestar, getBien
     getSugerencias, activarPremium, getSuscripcion, getPublicaciones, crearPublicacion, 
     getComentarios, crearComentario, eliminarPublicacion, getEspecialistas, 
     agendarConsulta, getMisConsultas, solicitarRecuperacion, 
-    verificarCodigo, restablecerPassword } = require('../controllers/authController');
+    verificarCodigo, restablecerPassword, subirFoto, getGaleria, eliminarFoto} = require('../controllers/authController');
 
 router.post('/registro', registro);
 router.post('/login', login);
@@ -39,5 +39,8 @@ router.get('/consultas/:id_usuario', getMisConsultas);
 router.post('/recuperar-password', solicitarRecuperacion);
 router.post('/verificar-codigo', verificarCodigo);
 router.post('/restablecer-password', restablecerPassword);
+router.post('/galeria', subirFoto);
+router.get('/galeria/:id_usuario', getGaleria);
+router.delete('/galeria/:id_foto', eliminarFoto);
 
 module.exports = router;

@@ -682,10 +682,68 @@ const restablecerPassword = async (req, res) => {
   }
 };
 
+// ─── GALERIA ─────────────────────────────────────────────────
+const cloudinary = require('../config/cloudinary');
+
+const subirFoto = async (req, res) => {
+  try {
+    const { id_usuario, imagen_base64, descripcion } = req.body;
+    if (!id_usuario || !imagen_base64)
+      return res.status(400).json({ ok: false, mensaje: 'Datos incompletos' });
+
+    const resultado = await cloudinary.uploader.upload(imagen_base64, {
+      folder: `momly/usuario_${id_usuario}`,
+      resource_type: 'image',
+    });
+
+    await pool.query(
+      'INSERT INTO galeria (id_usuario, url_imagen, public_id, descripcion) VALUES (?, ?, ?, ?)',
+      [id_usuario, resultado.secure_url, resultado.public_id, descripcion || '']
+    );
+
+    return res.status(201).json({ ok: true, mensaje: 'Foto subida exitosamente', url: resultado.secure_url });
+  } catch (error) {
+    console.error('Error en subirFoto:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const getGaleria = async (req, res) => {
+  try {
+    const { id_usuario } = req.params;
+    const [fotos] = await pool.query(
+      'SELECT * FROM galeria WHERE id_usuario = ? ORDER BY fecha DESC',
+      [id_usuario]
+    );
+    return res.status(200).json({ ok: true, data: fotos });
+  } catch (error) {
+    console.error('Error en getGaleria:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+const eliminarFoto = async (req, res) => {
+  try {
+    const { id_foto } = req.params;
+    const [fotos] = await pool.query('SELECT public_id FROM galeria WHERE id_foto = ?', [id_foto]);
+    if (fotos.length === 0)
+      return res.status(404).json({ ok: false, mensaje: 'Foto no encontrada' });
+
+    await cloudinary.uploader.destroy(fotos[0].public_id);
+    await pool.query('DELETE FROM galeria WHERE id_foto = ?', [id_foto]);
+
+    return res.status(200).json({ ok: true, mensaje: 'Foto eliminada exitosamente' });
+  } catch (error) {
+    console.error('Error en eliminarFoto:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error interno del servidor' });
+  }
+};
+
+
 module.exports = { registro, registroCompleto, login, verificarCorreo, getGuias, 
   registrarBienestar, getBienestar, crearCita, getCitas, eliminarCita, getVacunas, 
   marcarVacuna, desmarcarVacuna, getBebe, getBiblioteca, getEsNormal, getAcompanamiento,
   getSugerencias, activarPremium, getSuscripcion, getPublicaciones, crearPublicacion, 
   getComentarios, crearComentario, eliminarPublicacion, getEspecialistas, 
   agendarConsulta, getMisConsultas, solicitarRecuperacion, verificarCodigo, 
-  restablecerPassword};
+  restablecerPassword, subirFoto, getGaleria, eliminarFoto};
